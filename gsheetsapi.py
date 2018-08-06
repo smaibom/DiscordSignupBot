@@ -48,6 +48,10 @@ class Spreadsheet(object):
     except Exception as e:
       return False
 
+  def append_col(self,colnum,worksheet):
+    
+
+
 
 
 def load_spreadsheet(sheetID):
@@ -60,11 +64,3 @@ def load_spreadsheet(sheetID):
   gc = gspread.authorize(creds)
   return gc.open_by_key(sheetID)
 
-def main():
-  sheet = Spreadsheet("19lDNiH55dpAJNG573fwxQvM3o3YmY-8M_8k8wDGkDD0")
-  ws = sheet.get_worksheets()
-  for w in ws:
-    print(w.title)
-
-if __name__ == '__main__':
-  main()
