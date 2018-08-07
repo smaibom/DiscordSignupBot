@@ -24,7 +24,7 @@ class SignupSystem(object):
       True on successfull registration, False if user exists
 
     TODO:
-      Add changes to the signup sheet
+      Fix the upcoming sheet by updating the sumif and adding -values to upcoming events
     """
     usersheet = self.worksheets["Users"]
     pastsheet = self.worksheets["Past"]
@@ -33,9 +33,10 @@ class SignupSystem(object):
     if not userID in users:
       #Starting index for inserting values
       si = 2+len(users)
+      numevents = len(upcomingsheet.row_values(1))-1
       usersheet.insert_row([userID,numChars],si)
       pastsheet.insert_row([userID],si)
-      upcomingsheet.insert_row([userID],si)
+      upcomingsheet.insert_row([userID] + [-1] * numevents,si)
       return True
     else:
       return False
@@ -105,20 +106,48 @@ class SignupSystem(object):
     """
     """
     upcoming = self.worksheets["Upcoming"]
+    length = len(upcoming.col_values(1))
+    
+    #If we only have 2 values we do not have any registered users as first and last entry is reserved
+    if length <= 2:
+      return False
+    
     col = len(upcoming.row_values(1))
-    users = len(upcoming.col_values(1))-1
+    #The letter for a range 
     letter = chr(65+col)
-        # [date,-1 for each user, sum field]
-    #Creates a sumif statement over the users 
-    sumstring = '=sumif(' + letter+ '2:' + letter+str(users)+',"=1,Users!B2:B' + str(users) + ')'  
-    vals = [date] + [-1]*(users-1) + [sumstring]
-    upcoming.insert_col(vals,col)
+
+    #gspread dosent support insert column so we have to get the range of cells and update each cell
+    cellrange = letter + '1:'+letter+str(length)
+
+    cells = upcoming.range(cellrange)
+    
+    #Format of event is date, signup for each registered person and ending is a sumif for total chars available based on signups
+    cells[0].value = "placeholder"
+
+    for i in range(1,len(cells)-1):
+      cells[i].value = -1
+
+    #Need to create a sumif statement rangeing from 2:len-1
+    #example: =sumif(B2:B5,=1,Users!B2:B5)
+    sumif = "=sumif(" + letter + '2:' + letter + str(length-1) 
+    sumif += ',"=1",'
+    sumif += 'Users!B2:B' + str(length-1) + ')'
+
+    cells[-1].value = sumif
+
+    upcoming.update_cells(cells[:-1])
+    #Update cells has a bug where it appends a ' to the front of a cell starting with = causing it to give a wrong statement
+    upcoming.update_acell(letter+str(length),sumif)
+
 
 
 
 def main():
   sheet = SignupSystem("19lDNiH55dpAJNG573fwxQvM3o3YmY-8M_8k8wDGkDD0")
-  sheet.create_event("tommorow")
+  #sheet.unregister('ragnors')
+  sheet.register('ragn',5)
+  #sheet.create_event("tommorow")
 
 if __name__ == '__main__':
   main()
+
